@@ -49,8 +49,10 @@ def parse_options():
                 # TODO: Add some exception handling here
                 with open(a) as f:
                     for line in f:
-                        (key, val) = line.split(':')
-                        mysql_settings[str(key)] = str(val).strip()
+                        line = line.rstrip()
+                        if line and not line.startswith('#'):
+                            (key, val) = line.split(':')
+                            mysql_settings[str(key)] = str(val).strip()
             except:
                 print help()
                 sys.exit(3)
@@ -65,15 +67,15 @@ if __name__ == '__main__':
 
     print mysql_settings
     sys.exit(0)
-    #print 'Serial port: ', serial_port
-    #print 'Baud: ', baud
-    # try:
-    #     ser = serial.Serial(serial_port, baud)
-    # except serial.SerialException:
-    #     print 'Could not create serial connection'
-    #     sys.exit(3)
+    print 'Serial port: ', serial_port
+    print 'Baud: ', baud
+    try:
+        ser = serial.Serial(serial_port, baud)
+    except serial.SerialException:
+        print 'Could not create serial connection'
+        sys.exit(3)
 
-    # while True:
-    #     print(ser.readline())
+    while True:
+        print(ser.readline())
 
     
