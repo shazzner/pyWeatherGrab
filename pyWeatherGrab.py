@@ -6,8 +6,6 @@ import sys
 import serial
 import time
 
-#ser = serial.Serial('/dev/ttyACM0', 9600)
-
 def help():
     help_msg = 'pyWeatherGrab - grab weather sensor data via serial\n'\
     '\n'\
@@ -54,6 +52,15 @@ def parse_options():
     
 if __name__ == '__main__':
     serial_port, baud = parse_options()
-    print 'Serial port: ', serial_port
-    print 'Baud: ', baud
-    sys.exit(0)
+    #print 'Serial port: ', serial_port
+    #print 'Baud: ', baud
+    try:
+        ser = serial.Serial(serial_port, baud)
+    except serial.SerialException:
+        print 'Could not create serial connection'
+        sys.exit(3)
+
+    while True:
+        print(ser.readline())
+
+    
