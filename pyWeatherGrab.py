@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Read weather data from serial input such as an Arduino
+# Stores data into a mysql database
 
 import getopt
 import sys
@@ -10,18 +11,17 @@ def help():
     help_msg = 'pyWeatherGrab - grab weather sensor data via serial\n'\
     '\n'\
     '-h                                 Show this help\n'\
+    '-i, --settings                     Load a mysql settings file, see exampleSettings file\n'\
     '-s, --serial-port <Serial Port>    Set the serial port - Default: /dev/ttyUSB0\n'\
-    '-b, --baud <Baud Rate>             Set the baud rate - Default: 9600\n'
+    '-b, --baud <Baud Rate>             Set the baud rate - Default: 9600\n'\
+    '-w, --watch                        Just watch the raw serial output\n'
 
     return help_msg
 
-#while True:
-#    print(ser.readline())
-
 def parse_options():
     try:
-        long_options = ['serial-port', 'baud', 'help']
-        opts, args = getopt.getopt(sys.argv[1:], "s:hb:", long_options)
+        long_options = ['serial-port', 'baud', 'help', 'settings']
+        opts, args = getopt.getopt(sys.argv[1:], "s:hb:i:", long_options)
     except getopt.GetoptError, e:
         print help()
         sys.exit(3)
@@ -29,7 +29,7 @@ def parse_options():
     # Default options
     serial_port = '/dev/ttyACM0'
     baud = 9600
-    #stream = False
+    mysql_settings = {}
 
     for o, a in opts:
         if o in ('-s', '--serial-port'):
@@ -44,23 +44,36 @@ def parse_options():
             except:
                 print help()
                 sys.exit(3)
+        if o in ('-i', '--settings'):
+            try:
+                # TODO: Add some exception handling here
+                with open(a) as f:
+                    for line in f:
+                        (key, val) = line.split(':')
+                        mysql_settings[str(key)] = str(val).strip()
+            except:
+                print help()
+                sys.exit(3)
         if o in ('-h', '--help'):
             print help()
             sys.exit(0)
 
-    return (serial_port, baud)
+    return (serial_port, baud, mysql_settings)
     
 if __name__ == '__main__':
-    serial_port, baud = parse_options()
+    serial_port, baud, mysql_settings = parse_options()
+
+    print mysql_settings
+    sys.exit(0)
     #print 'Serial port: ', serial_port
     #print 'Baud: ', baud
-    try:
-        ser = serial.Serial(serial_port, baud)
-    except serial.SerialException:
-        print 'Could not create serial connection'
-        sys.exit(3)
+    # try:
+    #     ser = serial.Serial(serial_port, baud)
+    # except serial.SerialException:
+    #     print 'Could not create serial connection'
+    #     sys.exit(3)
 
-    while True:
-        print(ser.readline())
+    # while True:
+    #     print(ser.readline())
 
     

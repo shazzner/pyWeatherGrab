@@ -1,0 +1,7 @@
+baud: 9600
+serial_port: /dev/ttyACM0
+db_type: mysql
+db_name: example_db_name
+db_table: example_db_table
+db_user: user
+db_pw: userpw
