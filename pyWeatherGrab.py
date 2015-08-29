@@ -12,9 +12,10 @@ def help():
     '\n'\
     '-h                                 Show this help\n'\
     '-i, --settings                     Load a mysql settings file, see exampleSettings file\n'\
+#    '-w, --watch                        Just watch the raw serial output\n'\
     '-s, --serial-port <Serial Port>    Set the serial port - Default: /dev/ttyUSB0\n'\
-    '-b, --baud <Baud Rate>             Set the baud rate - Default: 9600\n'\
-    '-w, --watch                        Just watch the raw serial output\n'
+    '-b, --baud <Baud Rate>             Set the baud rate - Default: 9600\n'
+    
 
     return help_msg
 
@@ -52,7 +53,13 @@ def parse_options():
                         line = line.rstrip()
                         if line and not line.startswith('#'):
                             (key, val) = line.split(':')
-                            mysql_settings[str(key)] = str(val).strip()
+
+                            if str(key).startswith('sw_baud'):
+                                baud = str(val).strip()
+                            elif str(key).startswith('sw_serial'):
+                                serial_port = str(val).strip()
+                            else:
+                                mysql_settings[str(key)] = str(val).strip()
             except:
                 print help()
                 sys.exit(3)
@@ -65,6 +72,8 @@ def parse_options():
 if __name__ == '__main__':
     serial_port, baud, mysql_settings = parse_options()
 
+    print baud
+    print serial_port
     print mysql_settings
     sys.exit(0)
     print 'Serial port: ', serial_port
