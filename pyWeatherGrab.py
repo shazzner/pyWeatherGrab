@@ -5,7 +5,7 @@
 import getopt
 import sys
 import serial
-import time
+from interruptingcow import timeout
 
 def help():
     help_msg = 'pyWeatherGrab - grab weather sensor data via serial\n'\
@@ -72,19 +72,39 @@ def parse_options():
 if __name__ == '__main__':
     serial_port, baud, mysql_settings = parse_options()
 
-    print baud
-    print serial_port
-    print mysql_settings
-    sys.exit(0)
-    print 'Serial port: ', serial_port
-    print 'Baud: ', baud
     try:
         ser = serial.Serial(serial_port, baud)
     except serial.SerialException:
         print 'Could not create serial connection'
         sys.exit(3)
 
-    while True:
-        print(ser.readline())
+    data = {}
+    linenum = 0
 
+    # Droping timeout for testing
+    # TODO: Change it to 10 or be configurable
+    try:
+        with timeout(5, exception=RuntimeError):
+            while True:
+                line = ser.readline().rstrip()
+                if line:
+                    try:
+                        (temp, humid) = line.split(' ')
+                        data[linenum] = (temp.split(':')[1].strip('C'), humid.split(':')[1].strip('%'))
+                        linenum += 1
+                    except:
+                        pass
+    except RuntimeError:
+        pass
+
+    # Ok now we've got some data
+    print data
+    del data[0]
+    del data[len(data)]
+    print data
+
+    # We should now look at the data and remove any highs or lows possibly
+    # TODO: some basic data manipulations
+
+    # Let's insert our data in mysql
     
