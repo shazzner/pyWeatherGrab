@@ -8,6 +8,7 @@ import serial
 from interruptingcow import timeout
 import forecastio
 from decimal import Decimal
+import numpy as np
 
 def help():
     help_msg = 'pyWeatherGrab - grab weather sensor data via serial\n'\
@@ -93,8 +94,8 @@ if __name__ == '__main__':
         print 'Could not create serial connection'
         sys.exit(3)
 
-    data = {}
-    linenum = 0
+    datatemp = []
+    datahumid = []
 
     # Droping timeout for testing
     # TODO: Change it to 10 or be configurable
@@ -105,24 +106,32 @@ if __name__ == '__main__':
                 if line:
                     try:
                         (temp, humid) = line.split(' ')
-                        data[linenum] = (temp.split(':')[1].strip('C'), humid.split(':')[1].strip('%'))
-                        linenum += 1
+                        datatemp.append(temp.split(':')[1].strip('C'))
+                        datahumid.append(humid.split(':')[1].strip('%'))
                     except:
                         pass
     except RuntimeError:
         pass
 
     # Ok now we've got some data
-    print data
-    del data[0]
-    del data[len(data)]
-    print data
+    # We'll remove the first and last ones, just in case we grabbed them weirdly via serial
+    del datatemp[0]
+    del datatemp[len(datatemp) - 1]
+    del datahumid[0]
+    del datahumid[len(datahumid) - 1]
+    print 'datatemp: ', datatemp
+    print 'datahumid: ', datahumid
 
     # We should now look at the data and remove any highs or lows possibly
     # TODO: some basic data manipulations
+    datatemp = np.array(map(float, datatemp))
+    datahumid = np.array(map(float, datahumid))
+    insidetemp = round(Decimal(np.average(datatemp)),1)
+    insidehumid = round(Decimal(np.average(datahumid)),1)
 
+    print 'Inside temp: ', insidetemp
+    print 'Inside humid: ', insidehumid
 
-    # Let's insert our data in mysql
     forecast = forecastio.load_forecast(APIKEY, LAT, LOG)
     curforecast = forecast.currently()
 
@@ -134,4 +143,4 @@ if __name__ == '__main__':
 
     print 'Outside Humid: ', convertHumidPercent(curforecast.humidity)
     
-
+    # Let's insert our data in mysql
