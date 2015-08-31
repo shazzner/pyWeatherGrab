@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # Read weather data from serial input such as an Arduino
 # Stores data into a mysql database
+# TODO: Add comments
 
 import getopt
 import sys
@@ -9,6 +10,8 @@ from interruptingcow import timeout
 import forecastio
 from decimal import Decimal
 import numpy as np
+import MySQLdb as mdb
+import time
 
 def help():
     help_msg = 'pyWeatherGrab - grab weather sensor data via serial\n'\
@@ -33,6 +36,9 @@ def parse_options():
     serial_port = '/dev/ttyACM0'
     baud = 9600
     mysql_settings = {}
+    apikey = ''
+    lat = ''
+    log = ''
 
     for o, a in opts:
         if o in ('-s', '--serial-port'):
@@ -83,7 +89,7 @@ def convertFtoC (fahrenheit):
     return round(Decimal(((fahrenheit - 32) * 5) / 9),1)
 
 def convertHumidPercent (humidity):
-    return str(humidity * 100) + '%'
+    return str(humidity * 100)
 
 if __name__ == '__main__':
     serial_port, baud, mysql_settings, APIKEY, LAT, LOG = parse_options()
@@ -119,28 +125,48 @@ if __name__ == '__main__':
     del datatemp[len(datatemp) - 1]
     del datahumid[0]
     del datahumid[len(datahumid) - 1]
-    print 'datatemp: ', datatemp
-    print 'datahumid: ', datahumid
 
     # We should now look at the data and remove any highs or lows possibly
     # TODO: some basic data manipulations
+
+    capture_time = time.strftime('%Y-%m-%d %H:%M:%S')
+    
     datatemp = np.array(map(float, datatemp))
     datahumid = np.array(map(float, datahumid))
     insidetemp = round(Decimal(np.average(datatemp)),1)
     insidehumid = round(Decimal(np.average(datahumid)),1)
 
-    print 'Inside temp: ', insidetemp
-    print 'Inside humid: ', insidehumid
-
     forecast = forecastio.load_forecast(APIKEY, LAT, LOG)
     curforecast = forecast.currently()
 
-    print 'Outside Weather: ' + curforecast.icon
+    forecast_icon = curforecast.icon
 
-    print 'Outside Temp (F): ', curforecast.temperature
-    
-    print 'Outside Temp (C): ', convertFtoC(curforecast.temperature)
+    forecast_outside_temp = convertFtoC(curforecast.temperature)
 
-    print 'Outside Humid: ', convertHumidPercent(curforecast.humidity)
+    forecast_outside_humid = convertHumidPercent(curforecast.humidity)
+
+    forecast_outside_apparent_temp = convertFtoC(curforecast.apparentTemperature)
     
     # Let's insert our data in mysql
+
+    # Support multiple databases ?
+
+    try:
+        con = mdb.connect(host='localhost', user=mysql_settings['db_user'], passwd=mysql_settings['db_pw'], db=mysql_settings['db_name'])
+
+        with con:
+            cur = con.cursor()
+            cur.execute("INSERT INTO " + mysql_settings['db_table'] + " (capture_time,curr_room_temp,curr_room_humid,local_outside_icon,local_outside_temp,local_outside_humid,local_outside_apparent_temp) VALUES (%s, %s, %s, %s, %s, %s, %s)", (capture_time, insidetemp, insidehumid, forecast_icon, forecast_outside_temp, forecast_outside_humid, forecast_outside_apparent_temp) )
+    
+            print "Database updated!"
+    
+    except mdb.Error, e:
+  
+        print "Error %d: %s" % (e.args[0],e.args[1])
+        sys.exit(1)
+    
+    finally:    
+            
+        if con:    
+            con.close()
+    
