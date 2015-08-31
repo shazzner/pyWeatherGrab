@@ -1,5 +1,13 @@
-baud: 9600
-serial_port: /dev/ttyACM0
+# Serial Communication Settings
+sw_baud: 9600
+sw_serial_port: /dev/ttyACM0
+
+# Forecast.io API & Location Settings
+fr_apikey: <api_key>
+fr_lat: 29.416667
+fr_log: -98.5
+
+# Database Settings
 db_type: mysql
 db_name: example_db_name
 db_table: example_db_table

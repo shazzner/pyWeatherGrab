@@ -6,13 +6,14 @@ import getopt
 import sys
 import serial
 from interruptingcow import timeout
+import forecastio
+from decimal import Decimal
 
 def help():
     help_msg = 'pyWeatherGrab - grab weather sensor data via serial\n'\
     '\n'\
     '-h                                 Show this help\n'\
     '-i, --settings                     Load a mysql settings file, see exampleSettings file\n'\
-#    '-w, --watch                        Just watch the raw serial output\n'\
     '-s, --serial-port <Serial Port>    Set the serial port - Default: /dev/ttyUSB0\n'\
     '-b, --baud <Baud Rate>             Set the baud rate - Default: 9600\n'
     
@@ -58,6 +59,14 @@ def parse_options():
                                 baud = str(val).strip()
                             elif str(key).startswith('sw_serial'):
                                 serial_port = str(val).strip()
+                            # Probably should do a dict like with mysql
+                            # TODO: forecastio dict
+                            elif str(key).startswith('fr_apikey'):
+                                apikey = str(val).strip()
+                            elif str(key).startswith('fr_lat'):
+                                lat = str(val).strip()                                
+                            elif str(key).startswith('fr_log'):
+                                log = str(val).strip()
                             else:
                                 mysql_settings[str(key)] = str(val).strip()
             except:
@@ -67,10 +76,16 @@ def parse_options():
             print help()
             sys.exit(0)
 
-    return (serial_port, baud, mysql_settings)
-    
+    return (serial_port, baud, mysql_settings, apikey, lat, log)
+
+def convertFtoC (fahrenheit):
+    return round(Decimal(((fahrenheit - 32) * 5) / 9),1)
+
+def convertHumidPercent (humidity):
+    return str(humidity * 100) + '%'
+
 if __name__ == '__main__':
-    serial_port, baud, mysql_settings = parse_options()
+    serial_port, baud, mysql_settings, APIKEY, LAT, LOG = parse_options()
 
     try:
         ser = serial.Serial(serial_port, baud)
@@ -106,5 +121,17 @@ if __name__ == '__main__':
     # We should now look at the data and remove any highs or lows possibly
     # TODO: some basic data manipulations
 
+
     # Let's insert our data in mysql
+    forecast = forecastio.load_forecast(APIKEY, LAT, LOG)
+    curforecast = forecast.currently()
+
+    print 'Outside Weather: ' + curforecast.icon
+
+    print 'Outside Temp (F): ', curforecast.temperature
     
+    print 'Outside Temp (C): ', convertFtoC(curforecast.temperature)
+
+    print 'Outside Humid: ', convertHumidPercent(curforecast.humidity)
+    
+
